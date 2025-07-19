@@ -9,6 +9,10 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileNavigation } from "@/components/mobile/MobileNavigation";
 import { OfflineIndicator } from "@/components/mobile/OfflineIndicator";
+import { SkipLinks } from "@/components/accessibility/SkipLink";
+import { AccessibilityPanel } from "@/components/accessibility/AccessibilityPanel";
+import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor";
+import { preloadCriticalRoutes } from "@/components/performance/LazyLoader";
 import Home from "./pages/Home";
 import Scripts from "./pages/Scripts";
 import ScriptDetail from "./pages/ScriptDetail";
@@ -27,13 +31,34 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App: React.FC = () => {
+  // Preload critical routes for better performance
+  React.useEffect(() => {
+    preloadCriticalRoutes();
+  }, []);
+
+  // Register service worker
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <TooltipProvider>
           <div className="min-h-screen flex flex-col">
+            <SkipLinks />
             <Header />
-            <main className="flex-1">
+            <main id="main-content" className="flex-1">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/scripts" element={<Scripts />} />
@@ -55,6 +80,8 @@ const App: React.FC = () => {
             <Footer />
             <MobileNavigation />
             <OfflineIndicator />
+            <AccessibilityPanel />
+            <PerformanceMonitor />
           </div>
           <Toaster />
           <Sonner />
