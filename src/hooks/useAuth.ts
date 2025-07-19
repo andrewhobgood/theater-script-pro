@@ -13,7 +13,8 @@ export const useAuth = () => {
     // Simulate auth check
     const timer = setTimeout(() => {
       // For development, start with playwright user
-      setUser(mockCurrentUser);
+      const userWithName = { ...mockCurrentUser, name: `${mockCurrentUser.firstName} ${mockCurrentUser.lastName}` };
+      setUser(userWithName);
       setProfile(mockCurrentProfile);
       setIsLoading(false);
     }, 500);
@@ -29,7 +30,8 @@ export const useAuth = () => {
     
     const user = mockUsers.find(u => u.email === email && u.role === role);
     if (user) {
-      setUser(user);
+      const userWithName = { ...user, name: `${user.firstName} ${user.lastName}` };
+      setUser(userWithName);
       
       // Get profile based on role
       if (role === 'playwright') {
@@ -52,7 +54,8 @@ export const useAuth = () => {
   const switchRole = (role: UserRole) => {
     const newUser = mockUsers.find(u => u.role === role);
     if (newUser) {
-      setUser(newUser);
+      const userWithName = { ...newUser, name: `${newUser.firstName} ${newUser.lastName}` };
+      setUser(userWithName);
       
       if (role === 'playwright') {
         const profile = mockPlaywrightProfiles.find(p => p.userId === newUser.id);

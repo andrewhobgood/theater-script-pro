@@ -74,8 +74,8 @@ export const mockTheaterProfiles: TheaterCompanyProfile[] = [
   },
 ];
 
-// Mock Scripts
-export const mockScripts: Script[] = [
+// Mock Scripts (extended with extra fields for UI)
+export const mockScripts: (Script & { playwright: string; difficulty: string; price: number })[] = [
   {
     id: 'hamlet-2024',
     playwrightId: '1',
@@ -123,6 +123,9 @@ export const mockScripts: Script[] = [
     isPublic: true,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
+    playwright: 'William Shakespeare',
+    difficulty: 'Advanced',
+    price: 125,
   },
   {
     id: 'romeo-juliet-2024',
@@ -162,6 +165,9 @@ export const mockScripts: Script[] = [
     isPublic: true,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
+    playwright: 'William Shakespeare',
+    difficulty: 'Intermediate',
+    price: 95,
   },
 ];
 

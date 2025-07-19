@@ -8,6 +8,7 @@ export interface User {
   role: UserRole;
   firstName: string;
   lastName: string;
+  name?: string; // Computed property for display
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
