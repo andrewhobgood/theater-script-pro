@@ -8,6 +8,10 @@ import { Footer } from "@/components/layout/Footer";
 import Home from "./pages/Home";
 import Scripts from "./pages/Scripts";
 import ScriptDetail from "./pages/ScriptDetail";
+import Analytics from "./pages/Analytics";
+import PlaywrightProfile from "./pages/PlaywrightProfile";
+import AdminPanel from "./pages/AdminPanel";
+import NotificationCenter from "./pages/NotificationCenter";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
@@ -30,6 +34,10 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/scripts" element={<Scripts />} />
               <Route path="/scripts/:id" element={<ScriptDetail />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/playwrights/:id" element={<PlaywrightProfile />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/notifications" element={<NotificationCenter />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
