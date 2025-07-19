@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import Home from "./pages/Home";
 import Scripts from "./pages/Scripts";
+import ScriptDetail from "./pages/ScriptDetail";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
@@ -28,6 +29,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/scripts" element={<Scripts />} />
+              <Route path="/scripts/:id" element={<ScriptDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
