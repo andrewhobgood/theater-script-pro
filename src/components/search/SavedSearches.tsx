@@ -5,7 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Bookmark, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
-export const SavedSearches = () => {
+interface SavedSearchesProps {
+  onLoadSearch?: (search: any) => void;
+  currentSearch?: {
+    query: string;
+    filters: any;
+  };
+}
+
+export const SavedSearches = ({ onLoadSearch, currentSearch }: SavedSearchesProps) => {
   const [savedSearches] = useState([
     {
       id: '1',
@@ -43,7 +51,10 @@ export const SavedSearches = () => {
                     Last used: {format(search.lastUsed, 'MMM d, yyyy')}
                   </div>
                 </div>
-                <Button size="sm">
+                <Button 
+                  size="sm" 
+                  onClick={() => onLoadSearch?.(search)}
+                >
                   <Search className="h-3 w-3 mr-1" />
                   Run
                 </Button>
