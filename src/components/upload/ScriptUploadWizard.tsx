@@ -30,6 +30,10 @@ interface ScriptUploadWizardProps {
 
 export const ScriptUploadWizard = ({ onClose, onComplete }: ScriptUploadWizardProps) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  
   const [formData, setFormData] = useState({
     // Basic Info
     title: "",
@@ -54,13 +58,21 @@ export const ScriptUploadWizard = ({ onClose, onComplete }: ScriptUploadWizardPr
     scriptFile: null as File | null,
     thumbnailFile: null as File | null,
     additionalFiles: [] as File[],
+    perusalVersion: null as File | null,
     
     // Licensing
     basePrice: 100,
     royaltyRate: 8,
     educationalDiscount: 25,
     isPublic: true,
-    isActive: false // Will be set to true after review
+    isActive: false, // Will be set to true after review
+    
+    // Advanced
+    keywords: [] as string[],
+    targetAudience: "",
+    warnings: [] as string[],
+    performanceNotes: "",
+    technicalRequirements: ""
   });
 
   const steps = [

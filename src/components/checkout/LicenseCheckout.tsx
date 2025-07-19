@@ -41,13 +41,18 @@ interface LicenseCheckoutProps {
 
 export const LicenseCheckout = ({ script, licenseType, onClose, onComplete }: LicenseCheckoutProps) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  
   const [formData, setFormData] = useState({
     // License Details
     licenseType: licenseType,
     performanceDates: {
       start: "",
       end: "",
-      performances: [] as string[]
+      performances: [] as string[],
+      matinee: false,
+      evening: false
     },
     venue: {
       name: "",
@@ -55,18 +60,25 @@ export const LicenseCheckout = ({ script, licenseType, onClose, onComplete }: Li
       city: "",
       state: "",
       zipCode: "",
-      capacity: 0
+      capacity: 0,
+      type: "theater", // theater, school, community
+      website: ""
     },
     
     // Production Info
     productionTitle: "",
     director: "",
     producer: "",
+    contactPerson: "",
+    email: "",
+    phone: "",
     ticketPrices: {
       adult: 0,
       student: 0,
-      senior: 0
+      senior: 0,
+      child: 0
     },
+    estimatedAttendance: 0,
     
     // Payment
     paymentMethod: "card",
@@ -82,10 +94,14 @@ export const LicenseCheckout = ({ script, licenseType, onClose, onComplete }: Li
         zipCode: ""
       }
     },
+    promoCode: "",
     
-    // Agreement
+    // Agreement & Additional
     acceptTerms: false,
-    acceptRoyalties: false
+    acceptRoyalties: false,
+    marketingConsent: false,
+    additionalRequests: "",
+    rushDelivery: false
   });
 
   const steps = [
