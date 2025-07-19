@@ -132,13 +132,15 @@ export const Header = () => {
                               className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
                               to={item.href}
                             >
-                              <Theater className="h-6 w-6" />
-                              <div className="mb-2 mt-4 text-lg font-medium">
-                                {item.title}
+                              <div>
+                                <Theater className="h-6 w-6" />
+                                <div className="mb-2 mt-4 text-lg font-medium">
+                                  {item.title}
+                                </div>
+                                <p className="text-sm leading-tight text-muted-foreground">
+                                  {item.description}
+                                </p>
                               </div>
-                              <p className="text-sm leading-tight text-muted-foreground">
-                                {item.description}
-                              </p>
                             </Link>
                           </NavigationMenuLink>
                         </li>
@@ -149,10 +151,12 @@ export const Header = () => {
                                 to={subItem.href}
                                 className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                               >
-                                <div className="text-sm font-medium leading-none">{subItem.title}</div>
-                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                  {subItem.description}
-                                </p>
+                                <div>
+                                  <div className="text-sm font-medium leading-none">{subItem.title}</div>
+                                  <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                    {subItem.description}
+                                  </p>
+                                </div>
                               </Link>
                             </NavigationMenuLink>
                           </li>

@@ -65,6 +65,21 @@ const EnhancedButton = React.forwardRef<HTMLButtonElement, EnhancedButtonProps>(
   }, ref) => {
     const Comp = asChild ? Slot : "button";
     
+    // When using asChild, we can't use our custom loading/icon features
+    // The parent component must handle these features
+    if (asChild) {
+      return (
+        <Comp
+          className={cn(enhancedButtonVariants({ variant, size, className }))}
+          ref={ref}
+          disabled={disabled}
+          {...props}
+        >
+          {children}
+        </Comp>
+      );
+    }
+    
     return (
       <Comp
         className={cn(enhancedButtonVariants({ variant, size, loading, className }))}

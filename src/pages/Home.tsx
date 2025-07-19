@@ -186,28 +186,28 @@ const Home = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6 animate-fade-in">
-              <EnhancedButton 
-                size="xl" 
-                variant="spotlight"
+              <Button 
+                size="lg" 
+                className="spotlight-button h-14 px-12 text-base hover:scale-105 transition-transform"
                 asChild
-                icon={<Search className="h-5 w-5" />}
               >
-                <Link to="/scripts">
+                <Link to="/scripts" className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
                   Browse Scripts
                 </Link>
-              </EnhancedButton>
+              </Button>
               
-              <EnhancedButton 
-                size="xl" 
+              <Button 
+                size="lg" 
                 variant="outline" 
-                className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20 h-14 px-12 text-base hover:scale-105 transition-transform"
                 asChild
-                icon={<Users className="h-5 w-5" />}
               >
-                <Link to="/register">
+                <Link to="/register" className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
                   Join as Playwright
                 </Link>
-              </EnhancedButton>
+              </Button>
             </div>
           </div>
         </div>
@@ -279,16 +279,17 @@ const Home = () => {
           </Tabs>
 
           <div className="text-center">
-            <EnhancedButton 
+            <Button 
               size="lg" 
               variant="outline"
               asChild
-              icon={<ArrowRight className="h-4 w-4" />}
+              className="hover:scale-105 transition-transform"
             >
-              <Link to="/scripts">
+              <Link to="/scripts" className="flex items-center gap-2">
+                <ArrowRight className="h-4 w-4" />
                 View All Scripts
               </Link>
-            </EnhancedButton>
+            </Button>
           </div>
         </div>
       </section>
@@ -410,27 +411,27 @@ const Home = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <EnhancedButton 
-                size="xl" 
-                variant="spotlight"
+              <Button 
+                size="lg" 
+                className="spotlight-button h-14 px-12 text-base hover:scale-105 transition-transform"
                 asChild
-                icon={<ArrowRight className="h-5 w-5" />}
               >
-                <Link to="/register">
+                <Link to="/register" className="flex items-center gap-2">
+                  <ArrowRight className="h-5 w-5" />
                   Get Started Today
                 </Link>
-              </EnhancedButton>
-              <EnhancedButton 
-                size="xl" 
+              </Button>
+              <Button 
+                size="lg" 
                 variant="outline" 
-                className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20 h-14 px-12 text-base hover:scale-105 transition-transform"
                 asChild
-                icon={<BookOpen className="h-5 w-5" />}
               >
-                <Link to="/about">
+                <Link to="/about" className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
                   Learn More
                 </Link>
-              </EnhancedButton>
+              </Button>
             </div>
           </div>
         </div>
