@@ -1,69 +1,43 @@
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-interface LoadingSkeletonProps {
-  className?: string;
-  variant?: 'card' | 'text' | 'circle' | 'button';
-  lines?: number;
-}
+export const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={cn("bg-muted rounded-md animate-pulse", className)} />
+);
 
-export const LoadingSkeleton = ({ 
-  className, 
-  variant = 'text',
-  lines = 1 
-}: LoadingSkeletonProps) => {
-  const baseClasses = "animate-pulse bg-muted rounded";
+export const LoadingSkeleton = Skeleton; // Alias for backward compatibility
 
-  if (variant === 'card') {
-    return (
-      <div className={cn("theater-card p-6 space-y-4", className)}>
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-20 bg-muted rounded animate-pulse" />
-          <div className="flex-1 space-y-2">
-            <div className="h-5 bg-muted rounded animate-pulse" />
-            <div className="h-4 bg-muted rounded animate-pulse w-2/3" />
-            <div className="flex gap-2">
-              <div className="h-6 w-16 bg-muted rounded animate-pulse" />
-              <div className="h-6 w-12 bg-muted rounded animate-pulse" />
-            </div>
-          </div>
+export const ScriptCardSkeleton: React.FC = () => (
+  <div className="border rounded-lg p-4 space-y-4">
+    <Skeleton className="h-4 w-3/4" />
+    <Skeleton className="h-3 w-1/2" />
+    <Skeleton className="h-32 w-full" />
+    <div className="flex gap-2">
+      <Skeleton className="h-6 w-16" />
+      <Skeleton className="h-6 w-20" />
+    </div>
+  </div>
+);
+
+export const ScriptListSkeleton: React.FC<{ count?: number }> = ({ count = 6 }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {Array.from({ length: count }).map((_, index) => (
+      <ScriptCardSkeleton key={index} />
+    ))}
+  </div>
+);
+
+export const DashboardSkeleton: React.FC = () => (
+  <div className="space-y-8">
+    <Skeleton className="h-8 w-64" />
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="border rounded-lg p-4 space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-16" />
         </div>
-        <div className="space-y-2">
-          <div className="h-4 bg-muted rounded animate-pulse" />
-          <div className="h-4 bg-muted rounded animate-pulse w-4/5" />
-        </div>
-        <div className="flex gap-2">
-          <div className="h-8 flex-1 bg-muted rounded animate-pulse" />
-          <div className="h-8 w-20 bg-muted rounded animate-pulse" />
-        </div>
-      </div>
-    );
-  }
-
-  if (variant === 'circle') {
-    return (
-      <div className={cn("rounded-full", baseClasses, className)} />
-    );
-  }
-
-  if (variant === 'button') {
-    return (
-      <div className={cn("h-10 w-24", baseClasses, className)} />
-    );
-  }
-
-  // Text variant (default)
-  return (
-    <div className={cn("space-y-2", className)}>
-      {Array.from({ length: lines }).map((_, i) => (
-        <div 
-          key={i} 
-          className={cn(
-            "h-4", 
-            baseClasses,
-            i === lines - 1 && lines > 1 ? "w-3/4" : "w-full"
-          )} 
-        />
       ))}
     </div>
-  );
-};
+    <Skeleton className="h-64 w-full" />
+  </div>
+);
