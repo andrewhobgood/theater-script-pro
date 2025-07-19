@@ -1,0 +1,52 @@
+{
+  "name": "TheaterScript Pro",
+  "short_name": "TheaterScript",
+  "description": "Professional script management and collaboration platform for theater professionals",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#B91C5C",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "entertainment", "education"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "type": "image/png",
+      "sizes": "375x812",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "type": "image/png", 
+      "sizes": "1280x720",
+      "form_factor": "wide"
+    }
+  ],
+  "features": [
+    "script-reading",
+    "collaboration",
+    "offline-access",
+    "cross-device-sync"
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
