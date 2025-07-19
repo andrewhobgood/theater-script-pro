@@ -12,7 +12,7 @@ import { AdvancedSearchBar } from '@/components/search/AdvancedSearchBar';
 import { ScriptFilters } from '@/components/scripts/ScriptFilters';
 import { ScriptCard } from '@/components/scripts/ScriptCard';
 import { SavedSearches } from '@/components/search/SavedSearches';
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { ScriptCardSkeleton } from '@/components/ui/loading-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 
@@ -193,7 +193,7 @@ const Scripts = () => {
             {isLoading ? (
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <LoadingSkeleton key={i} variant="card" />
+                  <ScriptCardSkeleton key={i} />
                 ))}
               </div>
             ) : filteredScripts.length > 0 ? (

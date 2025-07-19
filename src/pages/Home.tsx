@@ -11,7 +11,7 @@ import { mockScripts } from '@/lib/mock-data';
 import { ScriptCard } from '@/components/scripts/ScriptCard';
 import { AdvancedSearchBar } from '@/components/search/AdvancedSearchBar';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
-import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { ScriptCardSkeleton } from '@/components/ui/loading-skeleton';
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -262,7 +262,7 @@ const Home = () => {
                 {isLoading ? (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Array.from({ length: 6 }).map((_, i) => (
-                      <LoadingSkeleton key={i} variant="card" />
+                      <ScriptCardSkeleton key={i} />
                     ))}
                   </div>
                 ) : (
