@@ -14,16 +14,392 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      licenses: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          license_type: Database["public"]["Enums"]["license_type"]
+          licensee_id: string
+          performance_dates: Json | null
+          purchase_price: number
+          script_id: string
+          signed_contract_url: string | null
+          special_terms: string | null
+          status: Database["public"]["Enums"]["license_status"] | null
+          updated_at: string | null
+          venue_capacity: number | null
+          venue_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          license_type: Database["public"]["Enums"]["license_type"]
+          licensee_id: string
+          performance_dates?: Json | null
+          purchase_price: number
+          script_id: string
+          signed_contract_url?: string | null
+          special_terms?: string | null
+          status?: Database["public"]["Enums"]["license_status"] | null
+          updated_at?: string | null
+          venue_capacity?: number | null
+          venue_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          license_type?: Database["public"]["Enums"]["license_type"]
+          licensee_id?: string
+          performance_dates?: Json | null
+          purchase_price?: number
+          script_id?: string
+          signed_contract_url?: string | null
+          special_terms?: string | null
+          status?: Database["public"]["Enums"]["license_status"] | null
+          updated_at?: string | null
+          venue_capacity?: number | null
+          venue_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licenses_licensee_id_fkey"
+            columns: ["licensee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licenses_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          awards: string[] | null
+          bio: string | null
+          company_name: string | null
+          created_at: string | null
+          department: string | null
+          email: string
+          first_name: string
+          id: string
+          is_educational: boolean | null
+          is_verified: boolean | null
+          last_name: string
+          location: Json | null
+          permissions: string[] | null
+          role: Database["public"]["Enums"]["user_role"]
+          social_media: Json | null
+          specialties: string[] | null
+          updated_at: string | null
+          user_id: string
+          venue_capacity: number | null
+          website: string | null
+          year_founded: number | null
+        }
+        Insert: {
+          awards?: string[] | null
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          department?: string | null
+          email: string
+          first_name: string
+          id?: string
+          is_educational?: boolean | null
+          is_verified?: boolean | null
+          last_name: string
+          location?: Json | null
+          permissions?: string[] | null
+          role?: Database["public"]["Enums"]["user_role"]
+          social_media?: Json | null
+          specialties?: string[] | null
+          updated_at?: string | null
+          user_id: string
+          venue_capacity?: number | null
+          website?: string | null
+          year_founded?: number | null
+        }
+        Update: {
+          awards?: string[] | null
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          is_educational?: boolean | null
+          is_verified?: boolean | null
+          last_name?: string
+          location?: Json | null
+          permissions?: string[] | null
+          role?: Database["public"]["Enums"]["user_role"]
+          social_media?: Json | null
+          specialties?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+          venue_capacity?: number | null
+          website?: string | null
+          year_founded?: number | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          is_verified_purchase: boolean | null
+          rating: number
+          reviewer_id: string
+          script_id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          rating: number
+          reviewer_id: string
+          script_id: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          rating?: number
+          reviewer_id?: string
+          script_id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scripts: {
+        Row: {
+          age_rating: string | null
+          average_rating: number | null
+          awards: string[] | null
+          cast_size_max: number | null
+          cast_size_min: number | null
+          cover_image_url: string | null
+          created_at: string | null
+          description: string | null
+          download_count: number | null
+          duration_minutes: number | null
+          educational_price: number | null
+          file_url: string | null
+          genre: string
+          id: string
+          is_featured: boolean | null
+          language: string | null
+          perusal_url: string | null
+          playwright_id: string
+          premiere_date: string | null
+          premiere_venue: string | null
+          premium_price: number | null
+          sample_pages_url: string | null
+          standard_price: number | null
+          status: Database["public"]["Enums"]["script_status"] | null
+          synopsis: string | null
+          technical_requirements: Json | null
+          themes: string[] | null
+          title: string
+          total_reviews: number | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          age_rating?: string | null
+          average_rating?: number | null
+          awards?: string[] | null
+          cast_size_max?: number | null
+          cast_size_min?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          duration_minutes?: number | null
+          educational_price?: number | null
+          file_url?: string | null
+          genre: string
+          id?: string
+          is_featured?: boolean | null
+          language?: string | null
+          perusal_url?: string | null
+          playwright_id: string
+          premiere_date?: string | null
+          premiere_venue?: string | null
+          premium_price?: number | null
+          sample_pages_url?: string | null
+          standard_price?: number | null
+          status?: Database["public"]["Enums"]["script_status"] | null
+          synopsis?: string | null
+          technical_requirements?: Json | null
+          themes?: string[] | null
+          title: string
+          total_reviews?: number | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          age_rating?: string | null
+          average_rating?: number | null
+          awards?: string[] | null
+          cast_size_max?: number | null
+          cast_size_min?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          duration_minutes?: number | null
+          educational_price?: number | null
+          file_url?: string | null
+          genre?: string
+          id?: string
+          is_featured?: boolean | null
+          language?: string | null
+          perusal_url?: string | null
+          playwright_id?: string
+          premiere_date?: string | null
+          premiere_venue?: string | null
+          premium_price?: number | null
+          sample_pages_url?: string | null
+          standard_price?: number | null
+          status?: Database["public"]["Enums"]["script_status"] | null
+          synopsis?: string | null
+          technical_requirements?: Json | null
+          themes?: string[] | null
+          title?: string
+          total_reviews?: number | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scripts_playwright_id_fkey"
+            columns: ["playwright_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          id: string
+          license_id: string | null
+          metadata: Json | null
+          script_id: string | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          stripe_payment_intent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          license_id?: string | null
+          metadata?: Json | null
+          script_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          license_id?: string | null
+          metadata?: Json | null
+          script_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      license_status: "active" | "expired" | "cancelled"
+      license_type: "standard" | "premium" | "educational"
+      script_status: "draft" | "published" | "archived"
+      transaction_status: "pending" | "completed" | "failed" | "refunded"
+      user_role: "playwright" | "theater_company" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +526,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      license_status: ["active", "expired", "cancelled"],
+      license_type: ["standard", "premium", "educational"],
+      script_status: ["draft", "published", "archived"],
+      transaction_status: ["pending", "completed", "failed", "refunded"],
+      user_role: ["playwright", "theater_company", "admin"],
+    },
   },
 } as const
