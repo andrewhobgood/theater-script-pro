@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,14 +17,18 @@ interface ScriptCardProps {
     duration: number;
     castSize: { min: number; max: number; flexible: boolean };
     ageRating: string;
-    price: number;
+    standard_price: number;
+    premium_price: number;
+    educational_price: number;
     difficulty: string;
     thumbnail?: string;
+    isFeatured?: boolean;
   };
   compact?: boolean;
+  viewMode?: 'grid' | 'list';
 }
 
-export const ScriptCard = ({ script, compact = false }: ScriptCardProps) => {
+export const ScriptCard = ({ script, compact = false, viewMode = 'grid' }: ScriptCardProps) => {
   if (compact) {
     return (
       <Card className="theater-card hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
@@ -38,7 +43,7 @@ export const ScriptCard = ({ script, compact = false }: ScriptCardProps) => {
               </Link>
               <p className="text-xs text-muted-foreground">{script.playwright}</p>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="text-xs">${script.price}</Badge>
+                <Badge variant="secondary" className="text-xs">${script.standard_price}</Badge>
                 <Badge variant="outline" className="text-xs">{script.difficulty}</Badge>
               </div>
             </div>
@@ -84,7 +89,7 @@ export const ScriptCard = ({ script, compact = false }: ScriptCardProps) => {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold text-primary">${script.price}</div>
+            <div className="text-xl font-bold text-primary">${script.standard_price}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Star className="h-3 w-3 fill-current text-yellow-400" />
               <span>4.8</span>

@@ -138,8 +138,6 @@ const ScriptDetail = () => {
     );
   }
 
-
-
   // Mock script content for reader
   const mockScriptContent = [
     `ACT I
@@ -715,7 +713,8 @@ Enter HORATIO and MARCELLUS`,
                         flexible: true,
                       },
                       duration: relatedScript.duration_minutes,
-                      
+                      ageRating: 'PG',
+                      difficulty: 'Intermediate',
                       thumbnail: relatedScript.cover_image_url,
                       standard_price: relatedScript.standard_price,
                       premium_price: relatedScript.premium_price,

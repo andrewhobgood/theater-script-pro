@@ -296,7 +296,8 @@ const Scripts = () => {
                         flexible: true,
                       },
                       duration: script.duration_minutes,
-                      
+                      ageRating: 'PG',
+                      difficulty: 'Intermediate',
                       thumbnail: script.cover_image_url,
                       standard_price: script.standard_price,
                       premium_price: script.premium_price,
