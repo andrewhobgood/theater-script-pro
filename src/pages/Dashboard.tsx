@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, Eye, Download, DollarSign, Users, FileText, TrendingUp } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/components/ui/use-toast";
+import { mockScripts } from "@/lib/mock-data";
 
 const Dashboard = () => {
   const { user, profile, isLoading: authLoading } = useAuth();
@@ -27,10 +28,10 @@ const Dashboard = () => {
       
       if (profile?.role === 'playwright') {
         const response = await apiClient.scripts.getMyScripts();
-        setScripts(response.scripts);
+        setScripts((response as any).scripts || []);
       } else if (profile?.role === 'theater_company') {
         const response = await apiClient.licenses.getMyLicenses();
-        setLicenses(response.licenses);
+        setLicenses((response as any).licenses || []);
       }
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);

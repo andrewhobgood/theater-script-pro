@@ -32,6 +32,11 @@ export interface Script {
   thumbnail?: string;
   photos?: string[];
   
+  // Pricing
+  standard_price: number;
+  premium_price: number;
+  educational_price: number;
+  
   // Publishing info
   isPublished: boolean;
   isPublic: boolean;

@@ -118,9 +118,9 @@ export const LicensePurchase = ({ script, onSuccess }: LicensePurchaseProps) => 
   };
 
   const prices = {
-    standard: script.price?.standard || 0,
-    premium: script.price?.premium || 0,
-    educational: script.price?.educational || 0,
+    standard: script.standard_price || 0,
+    premium: script.premium_price || 0,
+    educational: script.educational_price || 0,
   };
 
   const features = {

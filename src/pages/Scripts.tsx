@@ -98,8 +98,8 @@ const Scripts = () => {
 
       const response = await apiClient.scripts.searchScripts(searchTerm, params);
       
-      setScripts(response.scripts);
-      setTotalScripts(response.total);
+      setScripts((response as any).scripts || []);
+      setTotalScripts((response as any).total || 0);
     } catch (error: any) {
       console.error('Error searching scripts:', error);
       toast({
@@ -185,7 +185,7 @@ const Scripts = () => {
             )}
             
             {/* Saved Searches */}
-            <SavedSearches onSearchLoad={handleSavedSearchLoad} />
+            <SavedSearches />
           </aside>
 
           {/* Scripts Grid */}
@@ -274,13 +274,10 @@ const Scripts = () => {
                 icon={<BookOpen className="h-12 w-12" />}
                 title="No scripts found"
                 description={searchTerm ? "Try adjusting your search terms or filters" : "No scripts are available at the moment"}
-                action={
-                  searchTerm && (
-                    <Button variant="outline" onClick={clearAllFilters}>
-                      Clear filters
-                    </Button>
-                  )
-                }
+                action={searchTerm ? {
+                  label: "Clear filters",
+                  onClick: clearAllFilters
+                } : undefined}
               />
             ) : (
               <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 xl:grid-cols-3' : ''}`}>
@@ -296,17 +293,16 @@ const Scripts = () => {
                       castSize: {
                         min: script.cast_size_min,
                         max: script.cast_size_max,
+                        flexible: true,
                       },
                       duration: script.duration_minutes,
-                      themes: script.themes || [],
-                      coverImage: script.cover_image_url,
+                      
+                      thumbnail: script.cover_image_url,
                       rating: script.average_rating,
                       reviewCount: script.total_reviews,
-                      price: {
-                        standard: script.standard_price,
-                        premium: script.premium_price,
-                        educational: script.educational_price,
-                      },
+                      standard_price: script.standard_price,
+                      premium_price: script.premium_price,
+                      educational_price: script.educational_price,
                       isFeatured: script.is_featured,
                     }} 
                     viewMode={viewMode} 

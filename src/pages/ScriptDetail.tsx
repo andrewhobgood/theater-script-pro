@@ -98,7 +98,7 @@ const ScriptDetail = () => {
   const fetchReviews = async () => {
     try {
       const data = await apiClient.scripts.getReviews(id!);
-      setReviews(data.reviews || []);
+      setReviews((data as any).reviews || []);
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
@@ -107,7 +107,7 @@ const ScriptDetail = () => {
   const checkExistingLicense = async () => {
     try {
       const data = await apiClient.licenses.getMyLicenses();
-      const existingLicense = data.licenses.find(l => l.script_id === id && l.status === 'active');
+      const existingLicense = ((data as any).licenses || []).find((l: any) => l.script_id === id && l.status === 'active');
       setUserLicense(existingLicense);
     } catch (error) {
       console.error('Error checking license:', error);
@@ -129,9 +129,10 @@ const ScriptDetail = () => {
           icon={<BookOpen className="h-12 w-12" />}
           title="Script not found"
           description="The script you're looking for doesn't exist or has been removed."
-          action={
-            <Button onClick={() => navigate('/scripts')}>Browse Scripts</Button>
-          }
+          action={{
+            label: "Browse Scripts",
+            onClick: () => navigate('/scripts')
+          }}
         />
       </div>
     );
@@ -711,17 +712,16 @@ Enter HORATIO and MARCELLUS`,
                       castSize: {
                         min: relatedScript.cast_size_min,
                         max: relatedScript.cast_size_max,
+                        flexible: true,
                       },
                       duration: relatedScript.duration_minutes,
-                      themes: relatedScript.themes || [],
-                      coverImage: relatedScript.cover_image_url,
+                      
+                      thumbnail: relatedScript.cover_image_url,
                       rating: relatedScript.average_rating,
                       reviewCount: relatedScript.total_reviews,
-                      price: {
-                        standard: relatedScript.standard_price,
-                        premium: relatedScript.premium_price,
-                        educational: relatedScript.educational_price,
-                      },
+                      standard_price: relatedScript.standard_price,
+                      premium_price: relatedScript.premium_price,
+                      educational_price: relatedScript.educational_price,
                       isFeatured: relatedScript.is_featured,
                     }} 
                     compact 
@@ -746,15 +746,7 @@ Enter HORATIO and MARCELLUS`,
       {/* License Purchase Modal */}
       {script && (
         <LicensePurchaseModal
-          script={{
-            id: script.id,
-            title: script.title,
-            price: {
-              standard: script.standard_price,
-              premium: script.premium_price,
-              educational: script.educational_price,
-            }
-          }}
+          script={script as any}
           isOpen={showPurchaseModal}
           onClose={() => setShowPurchaseModal(false)}
           onSuccess={handlePurchaseSuccess}

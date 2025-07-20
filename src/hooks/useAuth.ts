@@ -326,10 +326,10 @@ export const useAuth = () => {
       console.log('Updating profile:', data);
       const response = await apiClient.users.updateProfile(data);
       
-      if (response.profile) {
+      if ((response as any).profile) {
         setAuthState(prev => ({
           ...prev,
-          profile: response.profile,
+          profile: (response as any).profile,
           error: null,
         }));
       }

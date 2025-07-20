@@ -1,23 +1,22 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSentryError, useSentryPerformance } from '@/hooks/useSentryError';
-import * as Sentry from '@sentry/react';
+import { useSentryError } from '@/hooks/useSentryError';
+import { Sentry } from '@/config/sentry';
 
 /**
  * Example component demonstrating Sentry error tracking usage
  * This file can be safely deleted after understanding the implementation
  */
 export function SentryExample() {
-  const { captureError, captureMessage, withErrorBoundary } = useSentryError();
-  const { measurePerformance } = useSentryPerformance();
+  const { reportError, reportMessage } = useSentryError();
 
   // Example 1: Capturing a handled error
   const handleError = () => {
     try {
       throw new Error('This is a test error');
     } catch (error) {
-      captureError(error as Error, {
+      reportError(error as Error, {
         component: 'SentryExample',
         action: 'handleError',
         additionalInfo: 'This is a demonstration of error capturing',
@@ -27,31 +26,16 @@ export function SentryExample() {
 
   // Example 2: Capturing a message
   const handleMessage = () => {
-    captureMessage('User performed an important action', 'info', {
-      component: 'SentryExample',
-      timestamp: new Date().toISOString(),
-    });
+    reportMessage('User performed an important action', 'info');
   };
 
-  // Example 3: Wrapping a function with error boundary
-  const riskyFunction = withErrorBoundary(
-    () => {
-      const random = Math.random();
-      if (random < 0.5) {
-        throw new Error('Random error occurred!');
-      }
-      return 'Success!';
-    },
-    { component: 'SentryExample', function: 'riskyFunction' }
-  );
-
-  // Example 4: Performance monitoring
-  const handlePerformance = async () => {
-    await measurePerformance('expensive-operation', async () => {
-      // Simulate expensive operation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Expensive operation completed');
-    });
+  // Example 3: Risky function
+  const riskyFunction = () => {
+    const random = Math.random();
+    if (random < 0.5) {
+      throw new Error('Random error occurred!');
+    }
+    return 'Success!';
   };
 
   // Example 5: User context
@@ -61,7 +45,7 @@ export function SentryExample() {
       email: 'user@example.com',
       username: 'testuser',
     });
-    captureMessage('User context set', 'info');
+    reportMessage('User context set', 'info');
   };
 
   // Example 6: Custom breadcrumb
@@ -75,7 +59,7 @@ export function SentryExample() {
         timestamp: new Date().toISOString(),
       },
     });
-    captureMessage('Breadcrumb added', 'debug');
+    reportMessage('Breadcrumb added', 'info');
   };
 
   return (
@@ -111,7 +95,7 @@ export function SentryExample() {
             Test Risky Function (50% chance of error)
           </Button>
           
-          <Button onClick={handlePerformance} variant="outline">
+          <Button onClick={() => alert('Performance monitoring removed')} variant="outline">
             Test Performance Monitoring
           </Button>
           

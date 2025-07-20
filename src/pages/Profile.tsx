@@ -16,7 +16,7 @@ const Profile = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
+    name: user?.email || "",
     email: user?.email || "",
     phone: "",
     location: "",
@@ -76,7 +76,7 @@ const Profile = () => {
                 <Avatar className="h-24 w-24">
                   <AvatarImage src="" />
                   <AvatarFallback className="text-lg">
-                    {user.name?.split(' ').map(n => n[0]).join('')}
+                    {user.email?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
