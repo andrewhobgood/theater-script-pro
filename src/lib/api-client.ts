@@ -1,28 +1,70 @@
 import { supabase } from '@/integrations/supabase/client';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+import { API_CONFIG, getApiUrl } from '@/config/api';
 
 interface ApiRequestOptions extends RequestInit {
   token?: string;
+  timeout?: number;
+}
+
+interface ApiError extends Error {
+  status?: number;
+  code?: string;
 }
 
 class ApiClient {
   private csrfToken: string | null = null;
 
   private async getAuthToken(): Promise<string | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.access_token || null;
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return null;
+    }
   }
 
   private async getCSRFToken(): Promise<string> {
     if (!this.csrfToken) {
-      const response = await fetch(`${API_BASE_URL}/csrf-token`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      this.csrfToken = data.token;
+      try {
+        const response = await fetch(getApiUrl('/csrf-token'), {
+          credentials: 'include',
+          signal: AbortSignal.timeout(API_CONFIG.TIMEOUT),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`CSRF token fetch failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        this.csrfToken = data.token;
+      } catch (error) {
+        console.error('Failed to get CSRF token:', error);
+        throw new Error('Unable to initialize secure connection');
+      }
     }
     return this.csrfToken;
+  }
+
+  private async requestWithRetry<T>(
+    endpoint: string,
+    options: ApiRequestOptions = {},
+    attempt: number = 1
+  ): Promise<T> {
+    try {
+      return await this.request<T>(endpoint, options);
+    } catch (error: any) {
+      const isNetworkError = !error.status || error.status >= 500;
+      const shouldRetry = isNetworkError && attempt < API_CONFIG.RETRY_ATTEMPTS;
+      
+      if (shouldRetry) {
+        console.warn(`API request failed (attempt ${attempt}), retrying...`, error.message);
+        await new Promise(resolve => setTimeout(resolve, API_CONFIG.RETRY_DELAY * attempt));
+        return this.requestWithRetry<T>(endpoint, options, attempt + 1);
+      }
+      
+      throw error;
+    }
   }
 
   private async request<T>(
@@ -30,16 +72,22 @@ class ApiClient {
     options: ApiRequestOptions = {}
   ): Promise<T> {
     const token = options.token || await this.getAuthToken();
+    const timeout = options.timeout || API_CONFIG.TIMEOUT;
     
     // Get CSRF token for non-GET requests
     let csrfToken: string | undefined;
     if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
-      csrfToken = await this.getCSRFToken();
+      try {
+        csrfToken = await this.getCSRFToken();
+      } catch (error) {
+        console.warn('CSRF token unavailable, proceeding without it');
+      }
     }
     
     const config: RequestInit = {
       ...options,
-      credentials: 'include', // Important for CSRF cookie
+      credentials: 'include',
+      signal: AbortSignal.timeout(timeout),
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -48,19 +96,34 @@ class ApiClient {
       },
     };
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Request failed' } }));
-      throw new Error(error.error?.message || `HTTP ${response.status}`);
-    }
+    try {
+      const response = await fetch(getApiUrl(endpoint), config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.error?.message || `HTTP ${response.status}`) as ApiError;
+        error.status = response.status;
+        error.code = errorData.error?.code;
+        throw error;
+      }
 
-    // Handle empty responses
-    if (response.status === 204) {
-      return {} as T;
-    }
+      // Handle empty responses
+      if (response.status === 204) {
+        return {} as T;
+      }
 
-    return response.json();
+      return response.json();
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - please check your connection');
+      }
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Unable to connect to server - please try again later');
+      }
+      
+      throw error;
+    }
   }
 
   // Auth endpoints
@@ -72,22 +135,28 @@ class ApiClient {
       role: 'playwright' | 'theater_company';
       company_name?: string;
       is_educational?: boolean;
-    }) => this.request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+    }) => this.requestWithRetry('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
     login: (email: string) => 
-      this.request('/auth/login', { method: 'POST', body: JSON.stringify({ email }) }),
+      this.requestWithRetry('/auth/login', { method: 'POST', body: JSON.stringify({ email }) }),
 
     verifyOtp: (email: string, token: string) =>
-      this.request<{
+      this.requestWithRetry<{
         access_token: string;
         refresh_token: string;
         user: any;
         profile: any;
       }>('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, token }) }),
 
-    logout: () => this.request('/auth/logout', { method: 'POST' }),
+    logout: () => this.requestWithRetry('/auth/logout', { method: 'POST' }),
     
-    getMe: () => this.request<{ user: any; profile: any }>('/auth/me'),
+    getMe: () => this.requestWithRetry<{ user: any; profile: any }>('/auth/me'),
+
+    refreshToken: (refresh_token: string) =>
+      this.requestWithRetry<{
+        access_token: string;
+        refresh_token: string;
+      }>('/auth/refresh', { method: 'POST', body: JSON.stringify({ refresh_token }) }),
   };
 
   // User endpoints

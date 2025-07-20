@@ -1,6 +1,9 @@
+
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,7 +16,7 @@ export const ProtectedRoute = ({
   requiredRole,
   fallbackPath = '/auth' 
 }: ProtectedRouteProps) => {
-  const { isAuthenticated, isLoading, profile } = useAuth();
+  const { isAuthenticated, isLoading, profile, error } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -21,6 +24,19 @@ export const ProtectedRoute = ({
       <div className="container mx-auto p-6 space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Authentication error: {error}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

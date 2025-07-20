@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +9,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Mail, User, Building, Loader2 } from "lucide-react";
+import { Mail, User, Building, Loader2, AlertCircle } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { ConnectionStatus } from "@/components/auth/ConnectionStatus";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
-  const { user, isLoading, login, register, verifyOtp } = useAuth();
+  const { user, isLoading, error, login, register, verifyOtp } = useAuth();
   const navigate = useNavigate();
   
   // Form states
@@ -88,74 +91,87 @@ const Auth = () => {
   if (showOtpVerification) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
-        <Card className="w-full max-w-md theater-card">
-          <CardHeader>
-            <CardTitle>Verify Your Email</CardTitle>
-            <CardDescription>
-              We've sent a verification code to {otpEmail}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-center">
-                <InputOTP
-                  maxLength={6}
-                  value={otp}
-                  onChange={setOtp}
-                  onComplete={handleOtpVerification}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-              
-              <Button
-                onClick={handleOtpVerification}
-                disabled={otp.length !== 6 || isSubmitting}
-                className="w-full"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify"
+        <div className="w-full max-w-md space-y-4">
+          <ConnectionStatus />
+          
+          <Card className="theater-card">
+            <CardHeader>
+              <CardTitle>Verify Your Email</CardTitle>
+              <CardDescription>
+                We've sent a verification code to {otpEmail}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setShowOtpVerification(false);
-                  setOtp("");
-                }}
-                className="w-full"
-              >
-                Back to login
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={setOtp}
+                    onComplete={handleOtpVerification}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                
+                <Button
+                  onClick={handleOtpVerification}
+                  disabled={otp.length !== 6 || isSubmitting}
+                  className="w-full"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify"
+                  )}
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowOtpVerification(false);
+                    setOtp("");
+                  }}
+                  className="w-full"
+                >
+                  Back to login
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             TheaterScript Pro
           </h1>
           <p className="text-muted-foreground mt-2">Join the theater community</p>
         </div>
+
+        <ConnectionStatus />
 
         <Card className="theater-card">
           <CardHeader>
@@ -163,6 +179,13 @@ const Auth = () => {
             <CardDescription>Sign in to your account or create a new one</CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>

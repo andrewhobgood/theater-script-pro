@@ -31,6 +31,7 @@ interface AuthState {
   profile: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  error: string | null;
 }
 
 export const useAuth = () => {
@@ -39,65 +40,132 @@ export const useAuth = () => {
     profile: null,
     isLoading: true,
     isAuthenticated: false,
+    error: null,
   });
   const { toast } = useToast();
+
+  // Clear error after a timeout
+  const clearError = useCallback(() => {
+    setTimeout(() => {
+      setAuthState(prev => ({ ...prev, error: null }));
+    }, 5000);
+  }, []);
 
   // Fetch user profile from API
   const fetchProfile = useCallback(async (user: SupabaseUser) => {
     try {
+      console.log('Fetching profile for user:', user.id);
       const { profile } = await apiClient.auth.getMe();
+      
       setAuthState({
         user,
         profile,
         isLoading: false,
         isAuthenticated: true,
+        error: null,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching profile:', error);
+      const errorMessage = error.message || 'Failed to load user profile';
+      
       setAuthState({
         user,
         profile: null,
         isLoading: false,
         isAuthenticated: true,
+        error: errorMessage,
       });
+      
+      toast({
+        title: "Profile Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      clearError();
     }
-  }, []);
+  }, [toast, clearError]);
 
-  // Check for existing session
+  // Check for existing session and set up auth listener
   useEffect(() => {
+    let mounted = true;
+
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Checking existing session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (session?.user) {
+        if (error) {
+          console.error('Session check error:', error);
+          if (mounted) {
+            setAuthState(prev => ({ 
+              ...prev, 
+              isLoading: false, 
+              error: 'Session verification failed' 
+            }));
+            clearError();
+          }
+          return;
+        }
+        
+        if (session?.user && mounted) {
+          console.log('Found existing session');
           await fetchProfile(session.user);
-        } else {
+        } else if (mounted) {
+          console.log('No existing session found');
           setAuthState(prev => ({ ...prev, isLoading: false }));
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Session check error:', error);
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+        if (mounted) {
+          setAuthState(prev => ({ 
+            ...prev, 
+            isLoading: false, 
+            error: 'Unable to verify authentication status' 
+          }));
+          clearError();
+        }
       }
     };
 
-    checkSession();
-
-    // Listen for auth changes
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session?.user) {
-        await fetchProfile(session.user);
+        // Defer profile fetching to avoid deadlock
+        setTimeout(() => {
+          if (mounted) {
+            fetchProfile(session.user);
+          }
+        }, 0);
       } else if (event === 'SIGNED_OUT') {
         setAuthState({
           user: null,
           profile: null,
           isLoading: false,
           isAuthenticated: false,
+          error: null,
         });
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // Update user but keep existing profile if available
+        setAuthState(prev => ({
+          ...prev,
+          user: session.user,
+          error: null,
+        }));
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+    checkSession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile, clearError]);
 
   const register = async (data: {
     email: string;
@@ -108,8 +176,9 @@ export const useAuth = () => {
     is_educational?: boolean;
   }) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
+      console.log('Registering user:', data.email);
       await apiClient.auth.register(data);
       
       toast({
@@ -119,12 +188,19 @@ export const useAuth = () => {
       
       return { success: true, email: data.email };
     } catch (error: any) {
+      console.error('Registration error:', error);
+      const errorMessage = error.message || "An error occurred during registration";
+      
+      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      
       toast({
         title: "Registration failed",
-        description: error.message || "An error occurred during registration",
+        description: errorMessage,
         variant: "destructive",
       });
-      return { success: false, error: error.message };
+      
+      clearError();
+      return { success: false, error: errorMessage };
     } finally {
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
@@ -132,8 +208,9 @@ export const useAuth = () => {
 
   const login = async (email: string) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
+      console.log('Logging in user:', email);
       await apiClient.auth.login(email);
       
       toast({
@@ -143,12 +220,19 @@ export const useAuth = () => {
       
       return { success: true };
     } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error.message || "An error occurred during login";
+      
+      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      
       toast({
         title: "Login failed",
-        description: error.message || "An error occurred during login",
+        description: errorMessage,
         variant: "destructive",
       });
-      return { success: false, error: error.message };
+      
+      clearError();
+      return { success: false, error: errorMessage };
     } finally {
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
@@ -156,15 +240,21 @@ export const useAuth = () => {
 
   const verifyOtp = async (email: string, token: string) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
+      console.log('Verifying OTP for user:', email);
       const response = await apiClient.auth.verifyOtp(email, token);
       
-      // Set the session in Supabase
-      await supabase.auth.setSession({
+      // Set the session in Supabase client
+      console.log('Setting Supabase session');
+      const { error: sessionError } = await supabase.auth.setSession({
         access_token: response.access_token,
         refresh_token: response.refresh_token,
       });
+      
+      if (sessionError) {
+        throw new Error('Failed to establish session');
+      }
       
       toast({
         title: "Welcome!",
@@ -173,20 +263,36 @@ export const useAuth = () => {
       
       return { success: true };
     } catch (error: any) {
+      console.error('OTP verification error:', error);
+      const errorMessage = error.message || "Invalid or expired verification code";
+      
+      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      
       toast({
         title: "Verification failed",
-        description: error.message || "Invalid or expired verification code",
+        description: errorMessage,
         variant: "destructive",
       });
-      return { success: false, error: error.message };
+      
+      clearError();
+      return { success: false, error: errorMessage };
     }
   };
 
   const logout = async () => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
-      await apiClient.auth.logout();
+      console.log('Logging out user');
+      
+      // Call backend logout first
+      try {
+        await apiClient.auth.logout();
+      } catch (error) {
+        console.warn('Backend logout failed, continuing with local logout:', error);
+      }
+      
+      // Sign out from Supabase
       await supabase.auth.signOut();
       
       setAuthState({
@@ -194,13 +300,14 @@ export const useAuth = () => {
         profile: null,
         isLoading: false,
         isAuthenticated: false,
+        error: null,
       });
       
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Logout error:', error);
       // Force local logout even if API fails
       await supabase.auth.signOut();
@@ -209,18 +316,21 @@ export const useAuth = () => {
         profile: null,
         isLoading: false,
         isAuthenticated: false,
+        error: null,
       });
     }
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
     try {
+      console.log('Updating profile:', data);
       const response = await apiClient.users.updateProfile(data);
       
       if (response.profile) {
         setAuthState(prev => ({
           ...prev,
           profile: response.profile,
+          error: null,
         }));
       }
       
@@ -231,12 +341,19 @@ export const useAuth = () => {
       
       return { success: true };
     } catch (error: any) {
+      console.error('Profile update error:', error);
+      const errorMessage = error.message || "Failed to update profile";
+      
+      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      
       toast({
         title: "Update failed",
-        description: error.message || "Failed to update profile",
+        description: errorMessage,
         variant: "destructive",
       });
-      return { success: false, error: error.message };
+      
+      clearError();
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -245,6 +362,7 @@ export const useAuth = () => {
     profile: authState.profile,
     isLoading: authState.isLoading,
     isAuthenticated: authState.isAuthenticated,
+    error: authState.error,
     register,
     login,
     verifyOtp,
