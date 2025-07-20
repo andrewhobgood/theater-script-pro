@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, Star, Clock, Users, BookOpen, Grid, List, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { mockScripts } from '@/lib/mock-data';
 import { Script } from '@/types/script';
 import { AdvancedSearchBar } from '@/components/search/AdvancedSearchBar';
 import { ScriptFilters } from '@/components/scripts/ScriptFilters';
@@ -15,6 +14,8 @@ import { SavedSearches } from '@/components/search/SavedSearches';
 import { ScriptCardSkeleton } from '@/components/ui/loading-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/components/ui/use-toast';
 
 const Scripts = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,36 +24,119 @@ const Scripts = () => {
   const [durationRange, setDurationRange] = useState([30, 300]);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [isLoading, setIsLoading] = useState(false);
-  const [sortBy, setSortBy] = useState('featured');
+  const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [totalScripts, setTotalScripts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const { toast } = useToast();
 
-  // Get unique genres from scripts
-  const genres = Array.from(new Set(mockScripts.flatMap(script => script.genre)));
+  const limit = 20;
 
-  // Filter scripts based on search criteria
-  const filteredScripts = mockScripts.filter((script) => {
-    const matchesSearch = script.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         script.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         script.themes.some(theme => theme.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesGenre = selectedGenre === 'all' || script.genre.includes(selectedGenre);
-    
-    const matchesCastSize = script.castSize.min >= castSizeRange[0] && script.castSize.max <= castSizeRange[1];
-    
-    const matchesDuration = script.duration >= durationRange[0] && script.duration <= durationRange[1];
+  // Fetch scripts from API
+  useEffect(() => {
+    fetchScripts();
+  }, [selectedGenre, castSizeRange, durationRange, sortBy, currentPage]);
 
-    return matchesSearch && matchesGenre && matchesCastSize && matchesDuration;
-  });
+  const fetchScripts = async () => {
+    try {
+      setIsLoading(true);
+      
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: (currentPage * limit).toString(),
+        sort: sortBy,
+        order: 'desc',
+      });
+
+      // Add filters
+      if (selectedGenre !== 'all') {
+        params.append('genre', selectedGenre);
+      }
+      if (castSizeRange[0] > 1) {
+        params.append('min_cast', castSizeRange[0].toString());
+      }
+      if (castSizeRange[1] < 30) {
+        params.append('max_cast', castSizeRange[1].toString());
+      }
+      if (durationRange[0] > 30) {
+        params.append('min_duration', durationRange[0].toString());
+      }
+      if (durationRange[1] < 300) {
+        params.append('max_duration', durationRange[1].toString());
+      }
+
+      const response = await apiClient.scripts.getScripts(params);
+      
+      setScripts(response.scripts);
+      setTotalScripts(response.total);
+    } catch (error: any) {
+      console.error('Error fetching scripts:', error);
+      toast({
+        title: "Error loading scripts",
+        description: error.message || "Failed to load scripts",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const searchScripts = async () => {
+    if (!searchTerm.trim()) {
+      fetchScripts();
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: (currentPage * limit).toString(),
+      });
+
+      const response = await apiClient.scripts.searchScripts(searchTerm, params);
+      
+      setScripts(response.scripts);
+      setTotalScripts(response.total);
+    } catch (error: any) {
+      console.error('Error searching scripts:', error);
+      toast({
+        title: "Search failed",
+        description: error.message || "Failed to search scripts",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Search when term changes (with debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm) {
+        searchScripts();
+      } else {
+        fetchScripts();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const handleFilterChange = (filters: any) => {
-    // Handle filter changes from the ScriptFilters component
-    console.log('Filters changed:', filters);
+    if (filters.genre) setSelectedGenre(filters.genre);
+    if (filters.castSize) setCastSizeRange(filters.castSize);
+    if (filters.duration) setDurationRange(filters.duration);
   };
 
   const handleSavedSearchLoad = (search: any) => {
     setSearchTerm(search.query);
     // Apply saved filters
-    console.log('Loading saved search:', search);
+    if (search.filters) {
+      handleFilterChange(search.filters);
+    }
   };
 
   const clearAllFilters = () => {
@@ -61,6 +145,9 @@ const Scripts = () => {
     setDurationRange([30, 300]);
     setSearchTerm('');
   };
+
+  // Get unique genres from fetched scripts
+  const genres = Array.from(new Set(scripts.map(script => script.genre).filter(Boolean)));
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,129 +185,157 @@ const Scripts = () => {
             )}
             
             {/* Saved Searches */}
-            <SavedSearches 
-              onLoadSearch={handleSavedSearchLoad}
-              currentSearch={{ query: searchTerm, filters: {} }}
-            />
-
-            {/* Quick Stats */}
-            <Card className="theater-card">
-              <CardContent className="pt-6">
-                <div className="text-center space-y-2">
-                  <div className="text-3xl font-bold text-primary font-playfair">
-                    {filteredScripts.length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Scripts Found
-                  </div>
-                  {filteredScripts.length > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      {Math.round((filteredScripts.length / mockScripts.length) * 100)}% of collection
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Featured Scripts */}
-            <Card className="theater-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Sparkles className="h-4 w-4" />
-                  Trending This Week
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-3">
-                {mockScripts.slice(0, 3).map((script) => (
-                  <ScriptCard key={script.id} script={script} compact />
-                ))}
-              </CardContent>
-            </Card>
+            <SavedSearches onSearchLoad={handleSavedSearchLoad} />
           </aside>
 
-          {/* Enhanced Scripts Grid */}
+          {/* Scripts Grid */}
           <main className="flex-1">
+            {/* Results Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <h2 className="text-2xl font-semibold">
-                  {filteredScripts.length} Scripts Available
+                  {searchTerm ? 'Search Results' : 'Available Scripts'}
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  {searchTerm && `Results for "${searchTerm}"`}
+                <p className="text-muted-foreground">
+                  {totalScripts} scripts found
                 </p>
               </div>
-              
-              <div className="flex items-center gap-2">
-                {/* View Mode Toggle */}
-                <div className="flex border rounded-lg p-1">
+
+              <div className="flex items-center gap-4">
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at">Newest First</SelectItem>
+                    <SelectItem value="title">Title A-Z</SelectItem>
+                    <SelectItem value="standard_price">Price: Low to High</SelectItem>
+                    <SelectItem value="average_rating">Highest Rated</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex gap-2">
                   <Button
-                    size="sm"
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="icon"
                     onClick={() => setViewMode('grid')}
-                    className="h-8 w-8 p-0"
                   >
                     <Grid className="h-4 w-4" />
                   </Button>
                   <Button
-                    size="sm"
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    variant={viewMode === 'list' ? 'default' : 'outline'}
+                    size="icon"
                     onClick={() => setViewMode('list')}
-                    className="h-8 w-8 p-0"
                   >
                     <List className="h-4 w-4" />
                   </Button>
                 </div>
-
-                {/* Sort Selection */}
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="featured">Featured</SelectItem>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="title">Title A-Z</SelectItem>
-                    <SelectItem value="duration">Duration</SelectItem>
-                    <SelectItem value="cast-size">Cast Size</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
-            {/* Loading State */}
+            {/* Active Filters */}
+            {(selectedGenre !== 'all' || searchTerm || castSizeRange[0] > 1 || castSizeRange[1] < 30) && (
+              <div className="flex flex-wrap items-center gap-2 mb-6">
+                <span className="text-sm text-muted-foreground">Active filters:</span>
+                {selectedGenre !== 'all' && (
+                  <Badge variant="secondary">
+                    Genre: {selectedGenre}
+                  </Badge>
+                )}
+                {castSizeRange[0] > 1 || castSizeRange[1] < 30 && (
+                  <Badge variant="secondary">
+                    Cast: {castSizeRange[0]}-{castSizeRange[1]}
+                  </Badge>
+                )}
+                {searchTerm && (
+                  <Badge variant="secondary">
+                    Search: {searchTerm}
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                >
+                  Clear all
+                </Button>
+              </div>
+            )}
+
+            {/* Scripts Display */}
             {isLoading ? (
-              <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
-                {Array.from({ length: 6 }).map((_, i) => (
+              <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 xl:grid-cols-3' : ''}`}>
+                {[...Array(6)].map((_, i) => (
                   <ScriptCardSkeleton key={i} />
                 ))}
               </div>
-            ) : filteredScripts.length > 0 ? (
-              <div className={viewMode === 'grid' 
-                ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-6' 
-                : 'space-y-4'
-              }>
-                {filteredScripts.map((script) => (
-                  <div key={script.id} className="animate-fade-in">
-                    <ScriptCard script={script} compact={viewMode === 'list'} />
-                  </div>
+            ) : scripts.length === 0 ? (
+              <EmptyState
+                icon={<BookOpen className="h-12 w-12" />}
+                title="No scripts found"
+                description={searchTerm ? "Try adjusting your search terms or filters" : "No scripts are available at the moment"}
+                action={
+                  searchTerm && (
+                    <Button variant="outline" onClick={clearAllFilters}>
+                      Clear filters
+                    </Button>
+                  )
+                }
+              />
+            ) : (
+              <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 xl:grid-cols-3' : ''}`}>
+                {scripts.map((script) => (
+                  <ScriptCard 
+                    key={script.id} 
+                    script={{
+                      id: script.id,
+                      title: script.title,
+                      playwright: `${script.profiles?.first_name || ''} ${script.profiles?.last_name || ''}`.trim(),
+                      description: script.description,
+                      genre: [script.genre],
+                      castSize: {
+                        min: script.cast_size_min,
+                        max: script.cast_size_max,
+                      },
+                      duration: script.duration_minutes,
+                      themes: script.themes || [],
+                      coverImage: script.cover_image_url,
+                      rating: script.average_rating,
+                      reviewCount: script.total_reviews,
+                      price: {
+                        standard: script.standard_price,
+                        premium: script.premium_price,
+                        educational: script.educational_price,
+                      },
+                      isFeatured: script.is_featured,
+                    }} 
+                    viewMode={viewMode} 
+                  />
                 ))}
               </div>
-            ) : (
-              <EmptyState
-                icon={<Search className="h-12 w-12" />}
-                title="No scripts found"
-                description={searchTerm 
-                  ? `No scripts match "${searchTerm}". Try adjusting your search or filters.`
-                  : "Try adjusting your search criteria or clearing filters"
-                }
-                action={{
-                  label: "Clear All Filters",
-                  onClick: clearAllFilters,
-                  variant: "outline"
-                }}
-              />
+            )}
+
+            {/* Pagination */}
+            {totalScripts > limit && (
+              <div className="mt-8 flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                  disabled={currentPage === 0}
+                >
+                  Previous
+                </Button>
+                <span className="flex items-center px-4">
+                  Page {currentPage + 1} of {Math.ceil(totalScripts / limit)}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={(currentPage + 1) * limit >= totalScripts}
+                >
+                  Next
+                </Button>
+              </div>
             )}
           </main>
         </div>

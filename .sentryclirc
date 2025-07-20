@@ -1,0 +1,7 @@
+[defaults]
+url=https://sentry.io/
+org=your-org-name
+project=theater-script-pro-frontend
+
+[auth]
+token=your-sentry-auth-token

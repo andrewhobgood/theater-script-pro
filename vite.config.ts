@@ -19,4 +19,13 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    sourcemap: true, // Generate source maps for production builds
+    rollupOptions: {
+      output: {
+        // Ensure source maps are generated for all chunks
+        sourcemap: true,
+      },
+    },
+  },
 }));

@@ -24,17 +24,12 @@ import { UserRole } from '@/types/auth';
 import { cn } from '@/lib/utils';
 
 export const Header = () => {
-  const { user, isAuthenticated, logout, switchRole } = useAuth();
+  const { user, profile, isAuthenticated, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
-
-  const handleRoleSwitch = (role: UserRole) => {
-    switchRole(role);
-    setIsMobileMenuOpen(false);
-  };
 
   // Handle scroll effect
   useEffect(() => {
@@ -237,17 +232,17 @@ export const Header = () => {
                         <User className="h-4 w-4 text-white" />
                       </div>
                       <span className="hidden sm:inline font-medium">
-                        {user?.firstName}
+                        {profile?.first_name}
                       </span>
                       <Badge variant="secondary" className="hidden sm:inline">
-                        {user?.role?.replace('_', ' ')}
+                        {profile?.role?.replace('_', ' ')}
                       </Badge>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-1.5">
-                      <p className="font-medium">{user?.firstName} {user?.lastName}</p>
-                      <p className="text-sm text-muted-foreground">{user?.email}</p>
+                      <p className="font-medium">{profile?.first_name} {profile?.last_name}</p>
+                      <p className="text-sm text-muted-foreground">{profile?.email}</p>
                     </div>
                     <DropdownMenuSeparator />
                     
@@ -259,22 +254,6 @@ export const Header = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/settings">Settings</Link>
-                    </DropdownMenuItem>
-                    
-                    <DropdownMenuSeparator />
-                    
-                    {/* Development: Role Switching */}
-                    <div className="px-2 py-1">
-                      <p className="text-xs text-muted-foreground mb-1">Switch Role (Dev)</p>
-                    </div>
-                    <DropdownMenuItem onClick={() => handleRoleSwitch('playwright')}>
-                      Switch to Playwright
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleRoleSwitch('theater_company')}>
-                      Switch to Theater Company
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleRoleSwitch('admin')}>
-                      Switch to Admin
                     </DropdownMenuItem>
                     
                     <DropdownMenuSeparator />

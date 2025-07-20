@@ -65,7 +65,7 @@ const App: React.FC = () => {
                 <Route path="/scripts/:id" element={<ScriptDetail />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/playwrights/:id" element={<PlaywrightProfile />} />
-                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/admin/*" element={<AdminPanel />} />
                 <Route path="/notifications" element={<NotificationCenter />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />

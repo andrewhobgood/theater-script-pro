@@ -1,25 +1,62 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { mockScripts } from "@/lib/mock-data";
 import { Upload, Eye, Download, DollarSign, Users, FileText, TrendingUp } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, profile, isLoading: authLoading } = useAuth();
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [licenses, setLicenses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
+  useEffect(() => {
+    if (profile) {
+      fetchDashboardData();
+    }
+  }, [profile]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (profile?.role === 'playwright') {
+        const response = await apiClient.scripts.getMyScripts();
+        setScripts(response.scripts);
+      } else if (profile?.role === 'theater_company') {
+        const response = await apiClient.licenses.getMyLicenses();
+        setLicenses(response.licenses);
+      }
+    } catch (error: any) {
+      console.error('Error fetching dashboard data:', error);
+      toast({
+        title: "Error loading dashboard",
+        description: error.message || "Failed to load dashboard data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (authLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  const userScripts = mockScripts.filter(script => script.playwright === user.name);
+  if (!user || !profile) {
+    return <Navigate to="/auth" replace />;
+  }
 
   const PlaywrightDashboard = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold theater-heading">Welcome back, {user.name}</h1>
+          <h1 className="text-3xl font-bold theater-heading">Welcome back, {profile.first_name}</h1>
           <p className="text-muted-foreground">Manage your scripts and track performance</p>
         </div>
         <Button className="spotlight-button">
@@ -35,8 +72,8 @@ const Dashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userScripts.length}</div>
-            <p className="text-xs text-muted-foreground">+2 from last month</p>
+            <div className="text-2xl font-bold">{scripts.length}</div>
+            <p className="text-xs text-muted-foreground">Total in your library</p>
           </CardContent>
         </Card>
 
@@ -81,28 +118,36 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {userScripts.map((script) => (
-              <div key={script.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <h3 className="font-semibold">{script.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {script.genre.join(", ")} • {script.castSize.min}-{script.castSize.max} cast • {script.duration}min
-                  </p>
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="secondary">{script.difficulty}</Badge>
-                    <Badge variant="outline">${script.price}</Badge>
+            {isLoading ? (
+              <p className="text-center text-muted-foreground">Loading scripts...</p>
+            ) : scripts.length === 0 ? (
+              <p className="text-center text-muted-foreground">No scripts uploaded yet</p>
+            ) : (
+              scripts.map((script) => (
+                <div key={script.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{script.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {script.genre} • {script.cast_size_min}-{script.cast_size_max} cast • {script.duration_minutes}min
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant={script.status === 'published' ? 'default' : 'secondary'}>
+                        {script.status}
+                      </Badge>
+                      <Badge variant="outline">${script.standard_price}</Badge>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Edit
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -113,7 +158,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold theater-heading">Welcome, {user.name}</h1>
+          <h1 className="text-3xl font-bold theater-heading">Welcome, {profile.company_name || profile.first_name}</h1>
           <p className="text-muted-foreground">Find and license scripts for your productions</p>
         </div>
         <Button className="spotlight-button">
@@ -128,7 +173,7 @@ const Dashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{licenses.filter(l => l.status === 'active').length}</div>
             <p className="text-xs text-muted-foreground">Active licenses</p>
           </CardContent>
         </Card>
@@ -186,7 +231,7 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-6">
-      {user.role === "playwright" ? <PlaywrightDashboard /> : <TheaterCompanyDashboard />}
+      {profile.role === "playwright" ? <PlaywrightDashboard /> : <TheaterCompanyDashboard />}
     </div>
   );
 };

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +8,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { mockScripts } from "@/lib/mock-data";
 import { ScriptCard } from "@/components/scripts/ScriptCard";
 import { ScriptReader } from "@/components/reader/ScriptReader";
 import { EnhancedButton } from "@/components/ui/enhanced-button";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LicensePurchaseModal } from "@/components/licensing/LicensePurchaseModal";
+import { apiClient } from "@/lib/api-client";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Heart, 
   Share2, 
@@ -42,80 +45,99 @@ import {
 
 const ScriptDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+  const { toast } = useToast();
   const [isFavorited, setIsFavorited] = useState(false);
   const [showReader, setShowReader] = useState(false);
-  const [selectedLicense, setSelectedLicense] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Mock script data - in real app, fetch by ID
-  const script = mockScripts.find(s => s.id === id) || mockScripts[0];
-  const relatedScripts = mockScripts.filter(s => s.id !== script.id).slice(0, 3);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [script, setScript] = useState<any>(null);
+  const [relatedScripts, setRelatedScripts] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [userLicense, setUserLicense] = useState<any>(null);
 
-  const mockReviews = [
-    {
-      id: "1",
-      user: "Theater Director",
-      avatar: "TD",
-      rating: 5,
-      comment: "Absolutely brilliant! Our production was a huge success. The characters are well-developed and the dialogue is engaging.",
-      date: "2024-01-15",
-      helpful: 24,
-      verified: true
-    },
-    {
-      id: "2", 
-      user: "Sarah K.",
-      avatar: "SK",
-      rating: 4,
-      comment: "Great script with strong themes. Some technical requirements were challenging but worth it.",
-      date: "2024-01-10",
-      helpful: 12,
-      verified: false
-    },
-    {
-      id: "3",
-      user: "Mike R.",
-      avatar: "MR", 
-      rating: 5,
-      comment: "Perfect for our community theater. The audience loved every moment. Highly recommend!",
-      date: "2024-01-08",
-      helpful: 8,
-      verified: true
+  useEffect(() => {
+    if (id) {
+      fetchScriptDetails();
+      fetchRelatedScripts();
+      if (profile?.role === 'theater_company') {
+        checkExistingLicense();
+      }
     }
-  ];
+  }, [id, profile]);
 
-  const mockLicenseOptions = [
-    {
-      id: "perusal",
-      name: "Perusal License",
-      description: "Read-only access for evaluation purposes",
-      price: 15,
-      duration: "30 days",
-      popular: false,
-      includes: ["Watermarked script", "Character breakdown", "Synopsis"],
-      restrictions: ["No performance rights", "Evaluation only"]
-    },
-    {
-      id: "educational",
-      name: "Educational License", 
-      description: "Perfect for schools and educational institutions",
-      price: 75,
-      duration: "1 year",
-      popular: true,
-      includes: ["Full script", "Director's notes", "Study materials", "Performance rights"],
-      restrictions: ["Non-profit performances only", "Educational venues only"]
-    },
-    {
-      id: "standard",
-      name: "Standard License",
-      description: "Full production rights for professional theaters",
-      price: script.price,
-      duration: "6 months", 
-      popular: false,
-      includes: ["Full script", "Performance rights", "Marketing materials", "Technical specs"],
-      restrictions: ["Venue capacity limits apply", "Royalty payments required"]
+  const fetchScriptDetails = async () => {
+    try {
+      setIsLoading(true);
+      const data = await apiClient.scripts.getScript(id!);
+      setScript(data);
+      fetchReviews();
+    } catch (error: any) {
+      console.error('Error fetching script:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load script details",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  const fetchRelatedScripts = async () => {
+    try {
+      const params = new URLSearchParams({ limit: '3' });
+      const data = await apiClient.scripts.getScripts(params);
+      setRelatedScripts(data.scripts.filter(s => s.id !== id));
+    } catch (error) {
+      console.error('Error fetching related scripts:', error);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const data = await apiClient.scripts.getReviews(id!);
+      setReviews(data.reviews || []);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+  };
+
+  const checkExistingLicense = async () => {
+    try {
+      const data = await apiClient.licenses.getMyLicenses();
+      const existingLicense = data.licenses.find(l => l.script_id === id && l.status === 'active');
+      setUserLicense(existingLicense);
+    } catch (error) {
+      console.error('Error checking license:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <LoadingSkeleton />
+      </div>
+    );
+  }
+
+  if (!script) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <EmptyState
+          icon={<BookOpen className="h-12 w-12" />}
+          title="Script not found"
+          description="The script you're looking for doesn't exist or has been removed."
+          action={
+            <Button onClick={() => navigate('/scripts')}>Browse Scripts</Button>
+          }
+        />
+      </div>
+    );
+  }
+
+
 
   // Mock script content for reader
   const mockScriptContent = [
@@ -168,15 +190,36 @@ Enter HORATIO and MARCELLUS`,
     // Add more pages as needed...
   ];
 
-  const handleLicensePurchase = async (licenseId: string) => {
-    setIsLoading(true);
-    setSelectedLicense(licenseId);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsLoading(false);
-    // Handle success/redirect to checkout
+  const handleLicensePurchase = () => {
+    if (!profile) {
+      navigate('/auth');
+      return;
+    }
+
+    if (profile.role !== 'theater_company') {
+      toast({
+        title: "License Purchase",
+        description: "Only theater companies can purchase licenses",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (userLicense) {
+      toast({
+        title: "Existing License",
+        description: "You already have an active license for this script",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setShowPurchaseModal(true);
+  };
+
+  const handlePurchaseSuccess = () => {
+    checkExistingLicense();
+    setShowPurchaseModal(false);
   };
 
   const handleAddToWishlist = () => {
@@ -220,15 +263,17 @@ Enter HORATIO and MARCELLUS`,
                       <p className="text-xl text-muted-foreground mb-3">{script.subtitle}</p>
                     )}
                     <div className="flex items-center gap-3 mb-3">
-                      <Link to={`/playwrights/${script.playwrightId}`} className="story-link group">
+                      <Link to={`/playwrights/${script.playwright_id}`} className="story-link group">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src="" />
                             <AvatarFallback className="text-xs">
-                              {script.playwright.split(' ').map(n => n[0]).join('')}
+                              {script.profiles?.first_name?.[0]}{script.profiles?.last_name?.[0]}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-lg font-medium group-hover:text-primary transition-colors">{script.playwright}</span>
+                          <span className="text-lg font-medium group-hover:text-primary transition-colors">
+                            {script.profiles?.first_name} {script.profiles?.last_name}
+                          </span>
                         </div>
                       </Link>
                       <Badge variant="outline" className="text-xs">
@@ -239,16 +284,16 @@ Enter HORATIO and MARCELLUS`,
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 fill-current text-yellow-400" />
-                        <span className="font-medium">4.8</span>
-                        <span>({mockReviews.length} reviews)</span>
+                        <span className="font-medium">{script.average_rating || 0}</span>
+                        <span>({script.total_reviews || 0} reviews)</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Eye className="h-4 w-4" />
-                        <span>1,247 views</span>
+                        <span>{script.view_count || 0} views</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Download className="h-4 w-4" />
-                        <span>342 licenses</span>
+                        <span>{script.license_count || 0} licenses</span>
                       </div>
                     </div>
                   </div>
@@ -274,29 +319,28 @@ Enter HORATIO and MARCELLUS`,
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {script.genre.map((g) => (
-                    <Badge key={g} variant="secondary">{g}</Badge>
+                  {script.genre && <Badge variant="secondary">{script.genre}</Badge>}
+                  {script.themes?.map((theme: string) => (
+                    <Badge key={theme} variant="outline">{theme}</Badge>
                   ))}
-                  <Badge variant="outline">{script.difficulty}</Badge>
-                  <Badge variant="outline">{script.ageRating}</Badge>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{script.duration} min</span>
+                    <span>{script.duration_minutes} min</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>{script.castSize.min}-{script.castSize.max} cast</span>
+                    <span>{script.cast_size_min}-{script.cast_size_max} cast</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>{script.pages} pages</span>
+                    <span>{script.page_count || 'TBD'} pages</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{script.publicationYear}</span>
+                    <span>{new Date(script.created_at).getFullYear()}</span>
                   </div>
                 </div>
 
@@ -309,12 +353,23 @@ Enter HORATIO and MARCELLUS`,
                   >
                     Preview Script
                   </EnhancedButton>
-                  <EnhancedButton
-                    variant="spotlight"
-                    icon={<ShoppingCart className="h-4 w-4" />}
-                  >
-                    License Now
-                  </EnhancedButton>
+                  {userLicense ? (
+                    <EnhancedButton
+                      variant="outline"
+                      icon={<CheckCircle className="h-4 w-4" />}
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      View License
+                    </EnhancedButton>
+                  ) : (
+                    <EnhancedButton
+                      variant="spotlight"
+                      icon={<ShoppingCart className="h-4 w-4" />}
+                      onClick={handleLicensePurchase}
+                    >
+                      License Now
+                    </EnhancedButton>
+                  )}
                   <EnhancedButton
                     variant="outline"
                     icon={<Bookmark className="h-4 w-4" />}
@@ -331,7 +386,7 @@ Enter HORATIO and MARCELLUS`,
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="characters">Characters</TabsTrigger>
                 <TabsTrigger value="technical">Technical</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews ({mockReviews.length})</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="mt-6 animate-fade-in">
@@ -353,9 +408,9 @@ Enter HORATIO and MARCELLUS`,
                           Themes
                         </h3>
                         <div className="flex flex-wrap gap-2">
-                          {script.themes.map((theme) => (
+                          {script.themes?.map((theme: string) => (
                             <Badge key={theme} variant="outline">{theme}</Badge>
-                          ))}
+                          )) || <span className="text-sm text-muted-foreground">No themes specified</span>}
                         </div>
                       </div>
                       
@@ -377,13 +432,12 @@ Enter HORATIO and MARCELLUS`,
                   <CardHeader>
                     <CardTitle>Character Breakdown</CardTitle>
                     <CardDescription>
-                      Cast size: {script.castSize.min}-{script.castSize.max} actors
-                      {script.castSize.flexible && " (flexible casting available)"}
+                      Cast size: {script.cast_size_min}-{script.cast_size_max} actors
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {script.characters && script.characters.length > 0 ? (
+                      {script.characters?.length > 0 ? (
                         script.characters.map((character, index) => (
                           <div key={index} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex items-start justify-between">
@@ -437,27 +491,22 @@ Enter HORATIO and MARCELLUS`,
                         Sets & Locations
                       </h4>
                       <div className="grid md:grid-cols-2 gap-2">
-                        {script.sets.map((set, index) => (
+                        {script.settings?.map((set: string, index: number) => (
                           <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
                             <span>{set}</span>
                           </div>
-                        ))}
+                        )) || <span className="text-sm text-muted-foreground">No specific settings listed</span>}
                       </div>
                     </div>
 
-                    {script.specialRequirements && script.specialRequirements.length > 0 && (
+                    {script.technical_requirements && (
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
                           <AlertCircle className="h-4 w-4" />
-                          Special Requirements
+                          Technical Requirements
                         </h4>
-                        <div className="space-y-2">
-                          {script.specialRequirements.map((req, index) => (
-                            <div key={index} className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-800">
-                              <AlertCircle className="h-4 w-4 text-amber-500" />
-                              <span>{req}</span>
-                            </div>
-                          ))}
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-800">
+                          <p className="text-sm">{script.technical_requirements}</p>
                         </div>
                       </div>
                     )}
@@ -480,13 +529,13 @@ Enter HORATIO and MARCELLUS`,
                 <Card className="theater-card">
                   <CardHeader>
                     <CardTitle>Reviews & Ratings</CardTitle>
-                    <CardDescription>Based on {mockReviews.length} verified reviews</CardDescription>
+                    <CardDescription>Based on {reviews.length} verified reviews</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <div className="flex items-center gap-4 mb-4">
-                          <div className="text-5xl font-bold theater-heading">4.8</div>
+                          <div className="text-5xl font-bold theater-heading">{script.average_rating || 0}</div>
                           <div>
                             <div className="flex items-center gap-1 mb-1">
                               {[1,2,3,4,5].map((star) => (
@@ -515,7 +564,7 @@ Enter HORATIO and MARCELLUS`,
                     <Separator />
 
                     <div className="space-y-4">
-                      {mockReviews.map((review) => (
+                      {reviews.length > 0 ? reviews.map((review: any) => (
                         <div key={review.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
@@ -556,7 +605,14 @@ Enter HORATIO and MARCELLUS`,
                             </Button>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <EmptyState
+                          icon={<MessageSquare className="h-8 w-8" />}
+                          title="No reviews yet"
+                          description="Be the first to review this script"
+                          size="sm"
+                        />
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -575,42 +631,62 @@ Enter HORATIO and MARCELLUS`,
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {mockLicenseOptions.map((option) => (
-                  <div key={option.id} className={`border rounded-lg p-4 space-y-3 hover:shadow-md transition-all cursor-pointer ${option.popular ? 'border-primary bg-primary/5' : ''}`}>
-                    {option.popular && (
-                      <Badge variant="default" className="mb-2">Most Popular</Badge>
-                    )}
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{option.name}</h4>
-                        <p className="text-sm text-muted-foreground">{option.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">${option.price}</div>
-                        <div className="text-xs text-muted-foreground">{option.duration}</div>
-                      </div>
+                <div className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-all">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold">Standard License</h4>
+                      <p className="text-sm text-muted-foreground">Performance rights for up to 5 shows</p>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium">Includes:</p>
-                      <ul className="text-xs text-muted-foreground space-y-1">
-                        {option.includes.map((item, index) => (
-                          <li key={index}>• {item}</li>
-                        ))}
-                      </ul>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-primary">${script.standard_price}</div>
                     </div>
-
-                    <EnhancedButton
-                      variant={option.popular ? "theater" : "outline"}
-                      className="w-full"
-                      loading={isLoading && selectedLicense === option.id}
-                      onClick={() => handleLicensePurchase(option.id)}
-                      icon={<ShoppingCart className="h-4 w-4" />}
-                    >
-                      {option.id === 'perusal' ? 'Preview' : 'License'} ${option.price}
-                    </EnhancedButton>
                   </div>
-                ))}
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-all border-primary bg-primary/5">
+                  <Badge variant="default" className="mb-2">Most Popular</Badge>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold">Premium License</h4>
+                      <p className="text-sm text-muted-foreground">Unlimited performances for 1 year</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-primary">${script.premium_price}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-all">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold">Educational License</h4>
+                      <p className="text-sm text-muted-foreground">Special pricing for schools</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-primary">${script.educational_price}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {userLicense ? (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate('/dashboard')}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    View Your License
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={handleLicensePurchase}
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Purchase License
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -624,7 +700,32 @@ Enter HORATIO and MARCELLUS`,
               </CardHeader>
               <CardContent className="space-y-4">
                 {relatedScripts.map((relatedScript) => (
-                  <ScriptCard key={relatedScript.id} script={relatedScript} compact />
+                  <ScriptCard 
+                    key={relatedScript.id} 
+                    script={{
+                      id: relatedScript.id,
+                      title: relatedScript.title,
+                      playwright: `${relatedScript.profiles?.first_name || ''} ${relatedScript.profiles?.last_name || ''}`.trim(),
+                      description: relatedScript.description,
+                      genre: [relatedScript.genre],
+                      castSize: {
+                        min: relatedScript.cast_size_min,
+                        max: relatedScript.cast_size_max,
+                      },
+                      duration: relatedScript.duration_minutes,
+                      themes: relatedScript.themes || [],
+                      coverImage: relatedScript.cover_image_url,
+                      rating: relatedScript.average_rating,
+                      reviewCount: relatedScript.total_reviews,
+                      price: {
+                        standard: relatedScript.standard_price,
+                        premium: relatedScript.premium_price,
+                        educational: relatedScript.educational_price,
+                      },
+                      isFeatured: relatedScript.is_featured,
+                    }} 
+                    compact 
+                  />
                 ))}
               </CardContent>
             </Card>
@@ -639,6 +740,24 @@ Enter HORATIO and MARCELLUS`,
           scriptTitle={script.title}
           scriptContent={mockScriptContent}
           onClose={() => setShowReader(false)}
+        />
+      )}
+
+      {/* License Purchase Modal */}
+      {script && (
+        <LicensePurchaseModal
+          script={{
+            id: script.id,
+            title: script.title,
+            price: {
+              standard: script.standard_price,
+              premium: script.premium_price,
+              educational: script.educational_price,
+            }
+          }}
+          isOpen={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+          onSuccess={handlePurchaseSuccess}
         />
       )}
     </div>

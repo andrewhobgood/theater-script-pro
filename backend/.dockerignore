@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Django
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+docs/
+*.md
+README.rst
+LICENSE
+
+# Testing
+tests/
+test_*.py
+*_test.py
+conftest.py
+
+# Development
+.env
+.env.*
+docker-compose*.yml
+Makefile
+.pre-commit-config.yaml
+.flake8
+pyproject.toml
+requirements-dev.txt
+
+# Misc
+.dockerignore
+Dockerfile.*
+*.tar
+*.tar.gz

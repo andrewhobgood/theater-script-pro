@@ -4,30 +4,148 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
-import { Mail, Lock, User, Building } from "lucide-react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { Mail, User, Building, Loader2 } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const Auth = () => {
-  const { user, login } = useAuth();
+  const { user, isLoading, login, register, verifyOtp } = useAuth();
+  const navigate = useNavigate();
+  
+  // Form states
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [organization, setOrganization] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [role, setRole] = useState<"playwright" | "theater_company">("playwright");
+  const [companyName, setCompanyName] = useState("");
+  const [isEducational, setIsEducational] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // OTP verification state
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otp, setOtp] = useState("");
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, "playwright"); // Mock login
+    setIsSubmitting(true);
+    
+    const result = await login(email);
+    
+    if (result.success) {
+      setOtpEmail(email);
+      setShowOtpVerification(true);
+    }
+    
+    setIsSubmitting(false);
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, "playwright"); // Mock registration
+    setIsSubmitting(true);
+    
+    const data = {
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      role,
+      ...(role === "theater_company" && {
+        company_name: companyName,
+        is_educational: isEducational,
+      }),
+    };
+    
+    const result = await register(data);
+    
+    if (result.success) {
+      setOtpEmail(email);
+      setShowOtpVerification(true);
+    }
+    
+    setIsSubmitting(false);
   };
+
+  const handleOtpVerification = async () => {
+    if (otp.length !== 6) return;
+    
+    setIsSubmitting(true);
+    const result = await verifyOtp(otpEmail, otp);
+    
+    if (result.success) {
+      navigate("/dashboard");
+    }
+    
+    setIsSubmitting(false);
+  };
+
+  if (showOtpVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
+        <Card className="w-full max-w-md theater-card">
+          <CardHeader>
+            <CardTitle>Verify Your Email</CardTitle>
+            <CardDescription>
+              We've sent a verification code to {otpEmail}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={otp}
+                  onChange={setOtp}
+                  onComplete={handleOtpVerification}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              
+              <Button
+                onClick={handleOtpVerification}
+                disabled={otp.length !== 6 || isSubmitting}
+                className="w-full"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify"
+                )}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowOtpVerification(false);
+                  setOtp("");
+                }}
+                className="w-full"
+              >
+                Back to login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
@@ -51,107 +169,139 @@ const Auth = () => {
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="login" className="space-y-4">
+              <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="login-email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
-                        id="email"
+                        id="login-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-9"
+                        className="pl-10"
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-9"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full spotlight-button">
-                    Sign In
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending code...
+                      </>
+                    ) : (
+                      "Send verification code"
+                    )}
                   </Button>
                 </form>
               </TabsContent>
 
-              <TabsContent value="register" className="space-y-4">
+              <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="first-name">First Name</Label>
                       <Input
-                        id="name"
-                        type="text"
-                        placeholder="Enter your full name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="pl-9"
+                        id="first-name"
+                        placeholder="John"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
                         required
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last-name">Last Name</Label>
+                      <Input
+                        id="last-name"
+                        placeholder="Doe"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        disabled={isSubmitting}
                       />
                     </div>
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="reg-email">Email</Label>
+                    <Label htmlFor="register-email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
-                        id="reg-email"
+                        id="register-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-9"
+                        className="pl-10"
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="organization">Organization (Optional)</Label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="organization"
-                        type="text"
-                        placeholder="Theater company or school"
-                        value={organization}
-                        onChange={(e) => setOrganization(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
+                    <Label>I am a</Label>
+                    <RadioGroup value={role} onValueChange={(value: any) => setRole(value)}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="playwright" id="playwright" />
+                        <Label htmlFor="playwright" className="flex items-center cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          Playwright
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="theater_company" id="theater_company" />
+                        <Label htmlFor="theater_company" className="flex items-center cursor-pointer">
+                          <Building className="mr-2 h-4 w-4" />
+                          Theater Company
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="reg-password"
-                        type="password"
-                        placeholder="Create a password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-9"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full spotlight-button">
-                    Create Account
+
+                  {role === "theater_company" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="company-name">Company Name</Label>
+                        <Input
+                          id="company-name"
+                          placeholder="Acme Theater Company"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          required
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="educational"
+                          checked={isEducational}
+                          onCheckedChange={(checked) => setIsEducational(checked as boolean)}
+                          disabled={isSubmitting}
+                        />
+                        <Label htmlFor="educational" className="cursor-pointer">
+                          We are an educational institution
+                        </Label>
+                      </div>
+                    </>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      "Create Account"
+                    )}
                   </Button>
                 </form>
               </TabsContent>
