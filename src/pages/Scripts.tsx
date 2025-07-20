@@ -298,8 +298,6 @@ const Scripts = () => {
                       duration: script.duration_minutes,
                       
                       thumbnail: script.cover_image_url,
-                      rating: script.average_rating,
-                      reviewCount: script.total_reviews,
                       standard_price: script.standard_price,
                       premium_price: script.premium_price,
                       educational_price: script.educational_price,

@@ -717,8 +717,6 @@ Enter HORATIO and MARCELLUS`,
                       duration: relatedScript.duration_minutes,
                       
                       thumbnail: relatedScript.cover_image_url,
-                      rating: relatedScript.average_rating,
-                      reviewCount: relatedScript.total_reviews,
                       standard_price: relatedScript.standard_price,
                       premium_price: relatedScript.premium_price,
                       educational_price: relatedScript.educational_price,
