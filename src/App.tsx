@@ -28,8 +28,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import { useRouteLogger } from "@/hooks/useRouteLogger";
 import { useAppLogger } from "@/hooks/useAppLogger";
+import AppRouter from "@/components/routing/AppRouter";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,7 +50,6 @@ const queryClient = new QueryClient({
 const App: React.FC = () => {
   // Enable comprehensive logging
   useAppLogger();
-  useRouteLogger();
 
   // Preload critical routes for better performance
   React.useEffect(() => {
@@ -84,72 +83,7 @@ const App: React.FC = () => {
             <SkipLinks />
             <Header />
             <main id="main-content" className="flex-1">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/scripts" element={<Scripts />} />
-                <Route path="/scripts/:id" element={<ScriptDetail />} />
-                <Route path="/playwrights/:id" element={<PlaywrightProfile />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/login" element={<Auth />} />
-                <Route path="/signup" element={<Auth />} />
-                
-                {/* Protected Routes */}
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/profile" 
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/settings" 
-                  element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/analytics" 
-                  element={
-                    <ProtectedRoute requiredRole="playwright">
-                      <Analytics />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/notifications" 
-                  element={
-                    <ProtectedRoute>
-                      <NotificationCenter />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Admin Routes */}
-                <Route 
-                  path="/admin/*" 
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminPanel />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Catch-all route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AppRouter />
             </main>
             <Footer />
             <MobileNavigation />
