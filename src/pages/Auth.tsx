@@ -15,8 +15,16 @@ import { ConnectionStatus } from "@/components/auth/ConnectionStatus";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
+  console.log('🔐 AUTH COMPONENT RENDERING');
   const { user, isLoading, error, login, register, verifyOtp } = useAuth();
   const navigate = useNavigate();
+  
+  console.log('🔐 AUTH STATE:', { 
+    user: !!user, 
+    isLoading, 
+    error,
+    pathname: window.location.pathname
+  });
   
   // Form states
   const [email, setEmail] = useState("");
@@ -33,8 +41,11 @@ const Auth = () => {
   const [otp, setOtp] = useState("");
 
   if (user) {
+    console.log('✅ USER AUTHENTICATED - Redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
+
+  console.log('🔐 RENDERING AUTH FORM');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

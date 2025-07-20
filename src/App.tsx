@@ -28,6 +28,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { useRouteLogger } from "@/hooks/useRouteLogger";
+import { useAppLogger } from "@/hooks/useAppLogger";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,23 +48,31 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
+  // Enable comprehensive logging
+  useAppLogger();
+  useRouteLogger();
+
   // Preload critical routes for better performance
   React.useEffect(() => {
+    console.log('🚀 PRELOADING CRITICAL ROUTES');
     preloadCriticalRoutes();
   }, []);
 
   // Register service worker
   React.useEffect(() => {
+    console.log('🔧 REGISTERING SERVICE WORKER');
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
           .then((registration) => {
-            console.log('SW registered: ', registration);
+            console.log('✅ SW registered: ', registration);
           })
           .catch((registrationError) => {
-            console.log('SW registration failed: ', registrationError);
+            console.error('❌ SW registration failed: ', registrationError);
           });
       });
+    } else {
+      console.warn('⚠️ Service Worker not supported');
     }
   }, []);
 
@@ -82,6 +92,8 @@ const App: React.FC = () => {
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/login" element={<Auth />} />
+                <Route path="/signup" element={<Auth />} />
                 
                 {/* Protected Routes */}
                 <Route 
